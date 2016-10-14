@@ -14,15 +14,18 @@ class xts(object):
 
     def openserial(self, device):
         print("Reading: %s" % device)
-        self.radioserial = serial.Serial(device, timeout=1)
+        self.radioserial = serial.Serial(device, timeout=None)
 
     def sendecho(self, cmd):
         for byte in cmd:
-            self.radioserial.write(bytes([byte]))
+            binarybyte = bytes([byte])
+            self.radioserial.write(binarybyte)
             echobyte = self.radioserial.read() # Read one byte
-            print("Got this: %s" % bytes([echobyte]) )
-            if echobyte is not byte:
-                raise Exception('The radio did not echo back the command')
+            if echobyte is None:
+                raise Exception('The radio did not reply with anything')
+#            if echobyte is not binarybyte:
+#                print("Got this: ", binarybyte, echobyte)
+#                raise Exception('The radio did not echo back the command')
 
     def sendsimple(self, cmd):
         for byte in cmd:
@@ -32,4 +35,4 @@ class xts(object):
         print("This is a debugging function and will not end")
         while True:
             tmpdata = self.radioserial.read()
-            print(ord(tmpdata))
+            print(bytes([tmpdata]))

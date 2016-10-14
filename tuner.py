@@ -3,17 +3,16 @@
 import serial
 import os
 import sys
+import time
 
 import xts
 
 def main():
     radio = xts.xts()
     radio.openserial('/dev/ttyUSB0')
-    print(radio.radioserial)
-    print("Sending initiate command")
-    print("The size is: %d" % len(xts.tuner_initialize))
     radio.sendecho(xts.tuner_initialize)
     print("After initialize command")
+    time.sleep(0.179128)
 #    radio.sendsimple(xts.tuner_first)
     radio._endlessRead()
 #    radio.sendsimple(xts.tuner_second)

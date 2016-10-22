@@ -1,0 +1,11 @@
+Tuner will first send the initialization packet:
+Tuner Initialization: b'\x01\x02\x01\x40\xF7'
+
+Radio will send back a confirmation, 10 bytes:
+b'\x05\x03\x00\x58\xB7\x01\x00\x01\x1D\xDC'
+
+Then another set of 10 bytes
+b'\x01\x03\x00\x40\xEE\x01\x00\x00\x1D\xB5'
+
+Tuner will send another "initialization" packet, echoed back.
+

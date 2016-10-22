@@ -10,13 +10,14 @@ import xts
 def main():
     radio = xts.xts()
     radio.openserial('/dev/ttyUSB0')
+
+    # Send Mode
     radio.sendecho(xts.tuner_initialize)
-    print("After initialize command")
-    time.sleep(0.179128)
-#    radio.sendsimple(xts.tuner_first)
-    radio._endlessRead()
-#    radio.sendsimple(xts.tuner_second)
-#    radio.sendsimple(xts.tuner_third)
+
+    # Receive Mode
+    radio.recvmode()
+#    radio._endlessRead()
+
 
 if __name__ == "__main__" :
     main()

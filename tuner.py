@@ -5,10 +5,11 @@ import os
 import sys
 import time
 
-tuner_init_one = b'\x01\x02\x01\x40\xF7'
+TSTMOD = b'\x01\x02\x01\x40\xF7'
 tuner_init_two = b'\x00\x12\x01\x06\x02'
 
-tuner_cmd_one = b'\xF5\x11\x20\x00\x00\x00\xD9'
+READ_DATA_REQ = b'\xF5\x11'
+READ_DATA_REQ_MODEL_SERIAL = READ_DATA_REQ + b'\x20\x00\x00\x00\xD9'
 
 ACK = b'\x50'
 
@@ -40,9 +41,9 @@ def rtsdtr_on(device):
 def init_one(device):
     rtsdtr_on(device)                   # Line 13-14
     device.flush()                      # Line 15
-    device.write(tuner_init_one)        # Line 16
+    device.write(TSTMOD)        # Line 16
     b = device.read(size=5)             # Line 18
-    if b != tuner_init_one:
+    if b != TSTMOD:
         print("Error 1: The device failed to return the same bits back")
         sys.exit()
 
@@ -63,9 +64,9 @@ def init_two(device):
 def get_info(device, xts):
     ''' Gets serial and model number '''
     device.flush()                      # Line 47
-    device.write(tuner_cmd_one)         # Line 48
+    device.write(READ_DATA_REQ_MODEL_SERIAL)         # Line 48
     b = device.read(size=7)             # Line 50
-    if b != tuner_cmd_one:
+    if b != READ_DATA_REQ_MODEL_SERIAL:
         print("Error 4: The device failed to return the same bits back")
         sys.exit()
 
@@ -74,14 +75,15 @@ def get_info(device, xts):
         print("Error 5: 0x50 not received")
         sys.exit()
 
-    b = device.read(size=1)             # Line 56
-    if b != b'\xFF':
-        print("Error 6: 0xFF not received")
+    b = device.read(size=2)             # Line 56
+    if b != b'\xFF\x80':
+        print("Error 6: READ_DATA_REPLY not received")
         sys.exit()
-    b = device.read(size=3)             # Line 59
-    readsize = b[2]
+    b = device.read(size=2)             # Line 59
+    readsize = b[1]
     radioinfo = device.read(size=readsize) # Line 62
 
+    print(radioinfo)
     print(radioinfo[0:7])
     xts.serial = radioinfo[7:17].decode()
     xts.model = radioinfo[17:29].decode()

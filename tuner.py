@@ -6,7 +6,7 @@ import sys
 import time
 
 TSTMOD = b'\x01\x02\x01\x40\xF7'
-tuner_init_two = b'\x00\x12\x01\x06\x02'
+EPREQ = b'\x00\x12\x01\x06\x02'
 
 READ_DATA_REQ = b'\xF5\x11'
 READ_DATA_REQ_MODEL_SERIAL = READ_DATA_REQ + b'\x20\x00\x00\x00\xD9'
@@ -38,7 +38,7 @@ def rtsdtr_on(device):
     device.dtr = True
     device.rts = True
 
-def init_one(device):
+def cmd_tstmod(device):
     rtsdtr_on(device)                   # Line 13-14
     device.flush()                      # Line 15
     device.write(TSTMOD)        # Line 16
@@ -49,14 +49,14 @@ def init_one(device):
 
     rtsdtr_off(device)                  # Line 20-21
 
-def init_two(device):
+def cmd_epreq(device):
     rtsdtr_on(device)                   # Line 23-24
 #    device.dtr = True                   # Line 23
 #    device.rts = True                   # Line 24
     device.flush()                      # Line 25
-    device.write(tuner_init_two)        # Line 26
+    device.write(EPREQ)        # Line 26
     b = device.read(size=5)             # Line 28
-    if b != tuner_init_two:
+    if b != EPREQ:
         print("Error 2: The device failed to return the same bits back")
         sys.exit()
     rtsdtr_off(device)                  # Line 30-31
@@ -83,11 +83,8 @@ def get_info(device, xts):
     readsize = b[1]
     radioinfo = device.read(size=readsize) # Line 62
 
-    print(radioinfo)
-    print(radioinfo[0:7])
     xts.serial = radioinfo[7:17].decode()
     xts.model = radioinfo[17:29].decode()
-    print(radioinfo[29:])
 
 def main():
 
@@ -100,8 +97,8 @@ def main():
 #    device.dtr = False                  # Line 10
 #    device.rts = False                  # Line 11
 
-    init_one(device)
-    init_two(device)
+    cmd_tstmod(device)
+    cmd_epreq(device)
 
     rtsdtr_off(device)                  # Line 32-33
 #    device.dtr = False                  # Line 30

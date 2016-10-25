@@ -9,7 +9,7 @@ TSTMOD = b'\x01\x02\x01\x40\xF7'
 EPREQ = b'\x00\x12\x01\x06\x02'
 
 READ_DATA_REQ = b'\xF5\x11'
-READ_DATA_REQ_MODEL_SERIAL = READ_DATA_REQ + b'\x20\x00\x00\x00\xD9'
+#READ_DATA_REQ_MODEL_SERIAL = READ_DATA_REQ + b'\x20\x00\x00\x00\xD9'
 
 ACK = b'\x50'
 
@@ -24,6 +24,7 @@ def openradio():
     device.stopbits = 1
     device.parity = serial.PARITY_NONE
     device.bytesize = serial.EIGHTBITS
+    device.timeout = 1 # 2 seconds seems reasonable, eh?
     device.flush()
     device.dtr = True
     device.rts = True
@@ -61,8 +62,44 @@ def cmd_epreq(device):
         sys.exit()
     rtsdtr_off(device)                  # Line 30-31
 
+def get_deviceinfo(device, xts):
+    radioinfo = get_data(device, b'\x20\x00\x00\x00\xD9') # Get 32 bytes, from 00, D9 is the CRC
+
+    xts.serial = radioinfo[7:17].decode()
+    xts.model = radioinfo[17:29].decode()
+
+def get_data(device, location):
+    ''' Gets serial and model number '''
+#    sys.exit()
+    device.flush()                      # Line 47
+#    device.write(READ_DATA_REQ_MODEL_SERIAL)         # Line 48
+    device.write(READ_DATA_REQ + location) #b'\x20\x00\x00\x00\xD9')
+    b = device.read(size=7)             # Line 50
+    if b != READ_DATA_REQ + location: #b'\x20\x00\x00\x00\xD9':
+        print("Error 4: The device failed to return the same bits back")
+        sys.exit()
+
+    b = device.read(size=1)             # Line 53
+    if b != ACK:
+        print("Error 5: 0x50 not received")
+        sys.exit()
+
+    b = device.read(size=2)             # Line 56
+    if b != b'\xFF\x80':
+        print("Error 6: READ_DATA_REPLY not received")
+        sys.exit()
+    b = device.read(size=2)             # Line 59
+    readsize = b[1]
+    radioinfo = device.read(size=readsize) # Line 62
+
+    return radioinfo
+#    xts.serial = radioinfo[7:17].decode()
+#    xts.model = radioinfo[17:29].decode()
+
 def get_info(device, xts):
     ''' Gets serial and model number '''
+    print(READ_DATA_REQ_MODEL_SERIAL)
+#    sys.exit()
     device.flush()                      # Line 47
     device.write(READ_DATA_REQ_MODEL_SERIAL)         # Line 48
     b = device.read(size=7)             # Line 50
@@ -114,7 +151,10 @@ def main():
         print("Error 3: 0x50 not received")
         sys.exit()
 
-    get_info(device, xts)
+    get_deviceinfo(device, xts)
+#    mem = get_data(device, b'\x20\x00\x00\x00\xD9')
+#    print(mem)
+#    mem = get_data(device, b'\x20\x00\x00\x00\xD9')
 
     print("Serial Number:\t", xts.serial)
     print("Model Number:\t", xts.model)

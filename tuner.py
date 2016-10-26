@@ -5,6 +5,8 @@ import os
 import sys
 import time
 
+import xtscontroller
+
 TSTMOD = b'\x01\x02\x01\x40\xF7'
 EPREQ = b'\x00\x12\x01\x06\x02'
 
@@ -12,11 +14,6 @@ READ_DATA_REQ = b'\xF5\x11'
 #READ_DATA_REQ_MODEL_SERIAL = READ_DATA_REQ + b'\x20\x00\x00\x00\xD9'
 
 ACK = b'\x50'
-
-class xtscontroller(object):
-    model = b''
-    serial = b''
-    codeplug = b''
 
 def openradio():
     device = serial.Serial("/dev/ttyUSB0")
@@ -63,6 +60,7 @@ def cmd_epreq(device):
     rtsdtr_off(device)                  # Line 30-31
 
 def get_deviceinfo(device, xts):
+    crc_ret = xts.sbCRC(READ_DATA_REQ + b'\x20\x00\x00\x00', len(READ_DATA_REQ + b'\x20\x00\x00\x00'))
     radioinfo = get_data(device, b'\x20\x00\x00\x00\xD9') # Get 32 bytes, from 00, D9 is the CRC
 
     xts.serial = radioinfo[7:17].decode()
@@ -125,7 +123,7 @@ def get_info(device, xts):
 
 def main():
 
-    xts = xtscontroller()
+    xts = xtscontroller.xtscontroller()
 
     device = openradio()                # Lines 3-8
 

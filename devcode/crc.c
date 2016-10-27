@@ -24,10 +24,25 @@ unsigned char sbCRC(const unsigned char *msgbuf, const int len) {
 
 int main() {
 
-    unsigned char msg[4] = {0x01, 0x02, 0x01, 0x40};
-    unsigned char ret = sbCRC(msg, 4);
+    unsigned char msg1[4] = {0x01, 0x02, 0x01, 0x40};
+    unsigned char msg2[9] = {0x05, 0x03, 0x00, 0x58, 0xB7, 0x01, 0x00, 0x01, 0x1D};
+    unsigned char msg3[4] = {0x00, 0x12, 0x01, 0x06};
+    unsigned char msg4[6] = {0xf5, 0x11, 0x20, 0x00, 0x00, 0x40};
 
-    printf("%x\n", ret);
+    unsigned char ret1;
+    unsigned char ret2;
+    unsigned char ret3;
+    unsigned char ret4;
+
+    ret1 = sbCRC(msg1, 4);
+    ret2 = sbCRC(msg2, 9);
+    ret3 = sbCRC(msg3, 4);
+    ret4 = sbCRC(msg4, 6);
+
+    printf("Should be F7: %X\n", ret1);
+    printf("Should be DC: %X\n", ret2);
+    printf("Should be 02: %X\n", ret3);
+    printf("Should be 99: %X\n", ret4);
 
     return 0;
 }

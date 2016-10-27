@@ -52,4 +52,3 @@ ret3 = sbCRC(msg3, 4)
 print("Should be F7:", bytes(bytearray([ret1])));
 print("Should be DC:", bytes(bytearray([ret2])));
 print("Should be 02:", bytes(bytearray([ret3])));
-

@@ -1,0 +1,10 @@
+Memory:
+
+0x000000 - 32 bytes
+
+[serial] - 7 bytes to 17 bytes
+[model] - 17 bytes to 29 bytes
+
+0x000060 - 32 bytes
+
+[radio softspot] - Byte 9 minus 95, so 120 is 5E

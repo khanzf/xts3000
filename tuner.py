@@ -43,7 +43,7 @@ def cmd_tstmod(device):
     rtsdtr_on(device)                   # Line 13-14
     device.flush()                      # Line 15
 
-    print("tstmod: ", tstmod)
+#    print("tstmod: ", tstmod)
     device.write(tstmod)        # Line 16
     b = device.read(size=5)             # Line 18
     if b != tstmod:
@@ -56,7 +56,7 @@ def cmd_epreq(device):
 
     epreq = EPREQ + xtscontroller._sbCRC(EPREQ)
 
-    print("epreq: ", epreq)
+#    print("epreq: ", epreq)
 
     rtsdtr_on(device)                   # Line 23-24
 #    device.dtr = True                   # Line 23
@@ -77,17 +77,28 @@ def get_deviceinfo(device, xts):
     xts.serial = radioinfo[7:17].decode()
     xts.model = radioinfo[17:29].decode()
 
+def get_softspot(device, xts):
+    radioinfo = get_data(device, b'\x20\x00\x00\x60') # Get 32 byte
+    xts.softspot = radioinfo[9] - 95
+
+def get_softspot_high_1(device, xts):
+    radioinfo = get_data(device, b'\x20\x00\x00\x80')
+    xts.softspot_high_1 = radioinfo[18]
+
+    radioinfo = get_data(device, b'\x20\x00\x00\xA0')
+    xts.softspot_high_3 = radioinfo[10]
+
 def get_data(device, location):
     ''' Gets serial and model number '''
 #    sys.exit()
     device.flush()                      # Line 47
     combined = READ_DATA_REQ + location
-    print("Combined:", combined)
+#    print("Combined:", combined)
     crc_code = xtscontroller._checksum(READ_DATA_REQ + location)
-    print("CRC:", crc_code)
+#    print("CRC:", crc_code)
     msg_crc = READ_DATA_REQ + location + crc_code
 
-    print(msg_crc)
+#    print(msg_crc)
 
 #    device.write(READ_DATA_REQ_MODEL_SERIAL)         # Line 48
     device.write(msg_crc) #b'\x20\x00\x00\x00\xD9')
@@ -98,7 +109,7 @@ def get_data(device, location):
 
     b = device.read(size=1)             # Line 53
     if b != ACK:
-        print("Error 5a: 0x50 not received")
+        print("Error 5a: ACK not received")
         sys.exit()
 
     b = device.read(size=2)             # Line 56
@@ -112,33 +123,6 @@ def get_data(device, location):
     return radioinfo
 #    xts.serial = radioinfo[7:17].decode()
 #    xts.model = radioinfo[17:29].decode()
-
-def get_info(device, xts):
-    ''' Gets serial and model number '''
-    print(READ_DATA_REQ_MODEL_SERIAL)
-#    sys.exit()
-    device.flush()                      # Line 47
-    device.write(READ_DATA_REQ_MODEL_SERIAL)         # Line 48
-    b = device.read(size=7)             # Line 50
-    if b != READ_DATA_REQ_MODEL_SERIAL:
-        print("Error 4: The device failed to return the same bits back")
-        sys.exit()
-
-    b = device.read(size=1)             # Line 53
-    if b != ACK:
-        print("Error 5b: 0x50 not received")
-        sys.exit()
-
-    b = device.read(size=2)             # Line 56
-    if b != b'\xFF\x80':
-        print("Error 6: READ_DATA_REPLY not received")
-        sys.exit()
-    b = device.read(size=2)             # Line 59
-    readsize = b[1]
-    radioinfo = device.read(size=readsize) # Line 62
-
-    xts.serial = radioinfo[7:17].decode()
-    xts.model = radioinfo[17:29].decode()
 
 def main():
 
@@ -165,16 +149,27 @@ def main():
 
     b = device.read(size=1)             # Line 45
     if b != ACK:
-        print("Error 3: 0x50 not received")
+        print("Error 3: ACK not received")
         sys.exit()
 
     get_deviceinfo(device, xts)
+    get_softspot(device, xts)
+    get_softspot_high_1(device, xts)
 #    mem = get_data(device, b'\x20\x00\x00\x00\xD9')
 #    print(mem)
 #    mem = get_data(device, b'\x20\x00\x00\x00\xD9')
 
-    print("Serial Number:\t", xts.serial)
-    print("Model Number:\t", xts.model)
+    print("Serial Number:\t\t\t", xts.serial)
+    print("Model Number:\t\t\t", xts.model)
+    print()
+
+    print("Radio Softspot:\t\t\t", xts.softspot, "This is incorrect")
+    print()
+
+    print("Tx High Protocol")
+    print("Radio Softspot 136.025 MHz:\t", xts.softspot_high_1)
+    print("Radio Softspot 142.123 MHz:\t", "[memory address undetermined]")
+    print("Radio Softspot 154.225 MHz:\t", xts.softspot_high_3)
 
 if __name__ == "__main__" :
     main()

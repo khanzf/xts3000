@@ -5,9 +5,19 @@ import os
 import sys
 
 class xtscontroller(object):
-    model = b''
-    serial = b''
-    codeplug = b''
+    # Radio Information
+    model = ''
+    serial = ''
+    codeplug = ''
+
+    # Reference Oscillator
+    softspot = 0
+
+    # Transmission Alignment
+    ## Tx Power High
+    softspot_high_1 = 0
+    softspot_high_2 = 0
+    softspot_high_3 = 0
 
 def _right_shift_as_signed(byte, bits):
     result  = byte >> bits
@@ -37,7 +47,7 @@ def _sbCRC(msg):
 def _checksum(msg):
     total = 0
     for byte in msg:
-        print(byte)
+#        print(byte)
         total = total + byte
 
     return bytes(bytearray([255 - (total % 256)]))

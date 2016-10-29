@@ -7,14 +7,12 @@ Memory:
 [model] - 17 bytes to 29 bytes
 
 0x000060 - 32 bytes
-[radio softspot] - Byte 9 minus 95, so 120 is 5E
+[radio softspot] - Byte 9 minus 95, so 120 is 5E - This might be incorrect
 
 0x000080
-
 [radio softspot/High/135.025 MHz] - byte 18
 
 0x0000A0
-
 [radio softspot/High/154.225 Mhz] - byte 10
 
 0x0000C0

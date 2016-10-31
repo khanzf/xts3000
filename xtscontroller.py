@@ -95,30 +95,30 @@ class xtscontroller(object):
 
     def get_deviceinfo(self):
         ''' Get The device serial and model number '''
-        radioinfo = self.get_data(b'\x20\x00\x00\x00')
+        radioinfo = self.get_data(b'\x00\x00\x00')
 
         self.serial = radioinfo[7:17].decode()
         self.model = radioinfo[17:29].decode()
 
     def get_softspot(self):
         ''' Get the Radio Spotspot '''
-        radioinfo = self.get_data(b'\x20\x00\x00\x60')
+        radioinfo = self.get_data(b'\x00\x00\x60')
         self.softspot = radioinfo[9] - 95
 
     def get_softspot_high_1(self):
         ''' Get the High Tx softspots '''
-        radioinfo = self.get_data(b'\x20\x00\x00\x80')
+        radioinfo = self.get_data(b'\x00\x00\x80')
         self.softspot_high_1 = radioinfo[18]
 
-        radioinfo = self.get_data(b'\x20\x00\x00\xA0')
+        radioinfo = self.get_data(b'\x00\x00\xA0')
         self.softspot_high_3 = radioinfo[10]
 
     def get_data(self, location):
         ''' Generic function to get device data '''
         self.device.flush()
-        combined = READ_DATA_REQ + location
-        crc_code = _checksum(READ_DATA_REQ + location)
-        msg_crc = READ_DATA_REQ + location + crc_code
+        combined = READ_DATA_REQ + b'\x20' + location
+        crc_code = _checksum(READ_DATA_REQ + b'\x20' + location)
+        msg_crc = READ_DATA_REQ + b'\x20' + location + crc_code
 
         self.device.write(msg_crc)
         b = self.device.read(size=7)

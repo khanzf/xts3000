@@ -126,6 +126,8 @@ def get_data(device, location):
 
 def main():
 
+    options = options_parse()
+
     xts = xtscontroller.xtscontroller()
 
     device = openradio()                # Lines 3-8
@@ -171,5 +173,43 @@ def main():
     print("Radio Softspot 142.123 MHz:\t", "[memory address undetermined]")
     print("Radio Softspot 154.225 MHz:\t", xts.softspot_high_3)
 
-if __name__ == "__main__" :
+def options_parse():
+#    interface_types = ['stdio', 'tun', 'socks5']
+#    transport_types = ['tcp', 'http', 'dns', 'udp', 'icmp']
+    usage = "usage: %prog [-d] [-r variable] [-w variable=value] [...]"
+    version = "Currently not versioned"
+
+    from optparse import OptionParser
+    from optparse import OptionGroup
+
+    parser = OptionParser(usage=usage, version=version)
+    parser.add_option("-d", "--device", dest="devfile", type="string", help="Device File ie. /dev/ttyUSB0", default="/dev/ttyUSB0")
+
+    group = OptionGroup(parser, "Retrieve Device Information")
+    group.add_option("-r", "--read", dest="read", type="string", help="device - Device Information | zone - Zone List", default="all")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Write to Device")
+    group.add_option("-w", "--write", dest="write", type="string", help="Unimplemented")
+
+    (options, args) = parser.parse_args()
+
+#    parser.error("Testing")
+
+    if not options.devfile:
+        parser.error("Must specify device file with -d/--device")
+
+    if options.write:
+       parser.error("This is currently not implemented. Exiting.")
+
+    if not options.read and not options.write:
+        parser.error("Must select either --read or --write")
+
+    print("Read value:", options.read)
+
+    (options, args) = parser.parse_args()
+
+    return options
+
+if __name__ == "__main__":
     main()

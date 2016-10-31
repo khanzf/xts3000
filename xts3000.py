@@ -32,8 +32,11 @@ def main():
 
     if options.deviceinfo:
         xts.get_deviceinfo()
-    xts.get_softspot()
-    xts.get_softspot_high_1()
+    if options.softspot:
+        xts.get_softspot()
+        xts.get_softspot_high_1()
+    if options.memdump:
+        xts.memdump()
 
     print_results(options, xts)
 
@@ -56,6 +59,11 @@ def options_parse():
 
     group = OptionGroup(parser, "Write to Device")
     group.add_option("-w", "--write", dest="write", type="string", help="Unimplemented")
+    parser.add_option_group(group)
+
+    group = OptionGroup(parser, "Debug")
+    group.add_option("--memdump", dest="memdump", action="store_true", help="Dump the full memory")
+    parser.add_option_group(group)
 
     (options, args) = parser.parse_args()
 
@@ -63,7 +71,7 @@ def options_parse():
         parser.error("Must specify device file with -d/--device")
     if options.write:
        parser.error("This is currently not implemented. Exiting.")
-    if not options.deviceinfo and not options.zones:
+    if not options.deviceinfo and not options.zones and not options.memdump:
         parser.error("Did not specify any read options")
 
     (options, args) = parser.parse_args()

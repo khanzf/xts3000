@@ -113,6 +113,13 @@ class xtscontroller(object):
         radioinfo = self.get_data(b'\x00\x00\xA0')
         self.softspot_high_3 = radioinfo[10]
 
+    def memdump(self):
+        ''' Dump full device memory '''
+        for x in range(0,1048576,32):
+            mem_loc = x.to_bytes(3, byteorder='big')
+            data = self.get_data(mem_loc)
+            print("%s: %s" % (mem_loc, data))
+
     def get_data(self, location):
         ''' Generic function to get device data '''
         self.device.flush()

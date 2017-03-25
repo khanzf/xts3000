@@ -4,3 +4,4 @@ Offset	Start	End Variable
 000060	9	9	radio_softspot
 000080	18	18	radio_softspot_high_135.025
 0000A0	10	10	radio_softspot_high_154.255
+0007A0	22	26	zone_1_name

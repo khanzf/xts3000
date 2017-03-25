@@ -1,6 +1,7 @@
 import serial
 import os
 import sys
+import re
 
 TSTMOD = b'\x01\x02\x01\x40' # CRC is \xF7
 EPREQ = b'\x00\x12\x01\x06' # CRC is \x02
@@ -112,6 +113,9 @@ class xtscontroller(object):
         self.softspot_high_1 = self._checkread('radio_softspot_high_135.025')
         self.softspot_high_3 = self._checkread('radio_softspot_high_154.255')
 
+    def get_zones(self):
+        self.zone_1_name = self._checkread('zone_1_name')
+
     def _checkread(self, variable):
         ''' Private function to read from the from already saved memory or read device '''
         offset, start, end = self.memmap[variable]
@@ -131,7 +135,7 @@ class xtscontroller(object):
         for x in range(0,1048576,32):
             mem_loc = x.to_bytes(3, byteorder='big')
             data = self.get_data(mem_loc)
-            print("%s: %s" % (mem_loc, data))
+            print("%s: %s" % (binascii.b2a_hex(mem_loc).decode(), data))
 
     def get_data(self, location):
         ''' Generic function to get device data '''

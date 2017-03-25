@@ -1,3 +1,4 @@
 Offset	Start	End Variable	
 000000	7	17	serial
 000000	17	19	model
+0007A0	22	26	zone_1_name

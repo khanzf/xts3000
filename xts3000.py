@@ -43,11 +43,15 @@ def main():
         xts.loadmemmap()
         xts.get_softspot()
         xts.get_softspot_high_1()
+    if options.zones:
+        xts.loadmemmap()
+        xts.get_zones()
+        print(xts.zone_1_name)
     if options.memdump:
         xts.memdump()
     if options.printmap:
-        xts.get_deviceinfo()
         xts.loadmemmap()
+        
 
     print_results(options, xts)
 
@@ -86,8 +90,8 @@ def options_parse():
         parser.error("Must specify device file with -d/--device")
     if options.write:
        parser.error("This is currently not implemented. Exiting.")
-#    if not options.deviceinfo and not options.zones and not options.memdump:
-#        parser.error("Did not specify any read options")
+    if not options.zones and not options.softspot and not options.memdump and not options.printmap and not options.deviceinfo:
+        parser.error("You specified a device, but not what command to execute")
 
     (options, args) = parser.parse_args()
     return options

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import serial
 import os
 import sys
@@ -25,13 +23,17 @@ class xtscontroller(object):
     softspot_high_2 = 0
     softspot_high_3 = 0
 
+    memmap = {} # from the maps file 
+    memdata = {} # Stores previously read memory
+
     def openradio(self, devfile):
         ''' Open the Radio '''
         try:
             self.device = serial.Serial(devfile)
         except serial.serialutil.SerialException:
             print("Unable to open %s." % devfile, file=sys.stderr)
-            print("This may be a permissions issue. If you are on a Unix system, give read/write access to %s." % devfile, file=sys.stderr)
+            print("This may be a permissions issue. If you are on a Unix system, " \
+                  "give read/write access to %s." % devfile, file=sys.stderr)
             sys.exit(0)
         self.device.baudrate = 9600
         self.device.stopbits = 1
@@ -75,7 +77,8 @@ class xtscontroller(object):
         b = self.device.read(size=5)
         if b != tstmod:
             print("Error 1: The device failed to return the same bits back.", file=sys.stderr)
-            print("This may be a connection issue or the device is malfunctioning. Try turning it off and back on.", file=sys.stderr)
+            print("This may be a connection issue or the device is malfunctioning. " \
+                  "Try turning it off and back on.", file=sys.stderr)
             sys.exit()
 
         self.rtsdtr_off()
@@ -95,26 +98,36 @@ class xtscontroller(object):
 
     def get_deviceinfo(self):
         ''' Get The device serial and model number '''
+        ### These Values are hard-coded, necessary to determine which map file to use 
         radioinfo = self.get_data(b'\x00\x00\x00')
-
         self.serial = radioinfo[7:17].decode()
         self.model = radioinfo[17:29].decode()
 
     def get_softspot(self):
         ''' Get the Radio Spotspot '''
-        radioinfo = self.get_data(b'\x00\x00\x60')
-        self.softspot = radioinfo[9] - 95
+        self.softspot = self._checkread('radio_softspot') - 95
 
     def get_softspot_high_1(self):
         ''' Get the High Tx softspots '''
-        radioinfo = self.get_data(b'\x00\x00\x80')
-        self.softspot_high_1 = radioinfo[18]
+        self.softspot_high_1 = self._checkread('radio_softspot_high_135.025')
+        self.softspot_high_3 = self._checkread('radio_softspot_high_154.255')
 
-        radioinfo = self.get_data(b'\x00\x00\xA0')
-        self.softspot_high_3 = radioinfo[10]
+    def _checkread(self, variable):
+        ''' Private function to read from the from already saved memory or read device '''
+        offset, start, end = self.memmap[variable]
+        if not offset in self.memdata:
+            radioinfo = self.get_data(offset)
+        else:
+            radioinfo = self.memmap[variable]
+
+        if start == end:
+            return radioinfo[start]
+        else:
+            return radioinfo[start:end]
+
 
     def memdump(self):
-        ''' Dump full device memory '''
+        ''' Dump full device memory, debugging feature '''
         for x in range(0,1048576,32):
             mem_loc = x.to_bytes(3, byteorder='big')
             data = self.get_data(mem_loc)
@@ -147,6 +160,26 @@ class xtscontroller(object):
         radioinfo = self.device.read(size=readsize)
 
         return radioinfo
+
+    def loadmemmap(self):
+        ''' Load the appropriate memory map file located in $PWD/maps '''
+
+        _start = 0
+
+        try:
+            fp = open('maps/%s.img' % self.model)
+        except IOError:
+            print("Unable to open maps/%s.img!", file=sys.stderr)
+            print("Your XTS3000 model might not be available yet.", file=sys.stderr)
+            print("Contact Farhan Khan (KM4WRZ) at khanzf@gmail.com for support.", file=sys.stderr)
+            sys.exit(0)
+
+        for line in fp:
+            if _start == 0:
+               _start = 1
+               continue
+            offset, start, end, name = line.strip().split('\t')
+            self.memmap.update({name: [bytes.fromhex(offset), int(start), int(end)]})
 
 def _right_shift_as_signed(byte, bits):
     ''' Pythonic way to do a right bit shift with a signed variable '''

@@ -2,6 +2,7 @@
 
 import os
 import sys
+from binascii import b2a_hex
 
 import xtscontroller
 
@@ -18,6 +19,12 @@ def print_results(options, xts):
         print("Radio Softspot 142.123 MHz:\t", "[memory address undetermined]")
         print("Radio Softspot 154.225 MHz:\t", xts.softspot_high_3)
 
+    if options.printmap:
+        print("Offset\tStart\tEnd\tVariable")
+        for variable in xts.memmap:
+            offset, start, end = xts.memmap[variable] 
+            print("%s\t%s\t%s\t%s" % (b2a_hex(offset).decode(), start, end, variable))
+
 def main():
     ''' Main Function '''
     options = options_parse()
@@ -30,13 +37,17 @@ def main():
         print("Error 3: ACK not received")
         sys.exit()
 
-    if options.deviceinfo:
-        xts.get_deviceinfo()
+    xts.get_deviceinfo()
+
     if options.softspot:
+        xts.loadmemmap()
         xts.get_softspot()
         xts.get_softspot_high_1()
     if options.memdump:
         xts.memdump()
+    if options.printmap:
+        xts.get_deviceinfo()
+        xts.loadmemmap()
 
     print_results(options, xts)
 
@@ -49,7 +60,8 @@ def options_parse():
     from optparse import OptionGroup
 
     parser = OptionParser(usage=usage, version=version)
-    parser.add_option("-d", "--device", dest="devfile", type="string", help="Device File ie. /dev/ttyUSB0")
+    parser.add_option("-d", "--device", dest="devfile", type="string",
+                      help="Device File ie. /dev/ttyUSB0")
 
     group = OptionGroup(parser, "Retrieve Device Information")
     group.add_option("-i", dest="deviceinfo", help="Device Information", action="store_true")
@@ -62,7 +74,10 @@ def options_parse():
     parser.add_option_group(group)
 
     group = OptionGroup(parser, "Debug")
-    group.add_option("--memdump", dest="memdump", action="store_true", help="Dump the full memory")
+    group.add_option("--memdump", dest="memdump", action="store_true",
+                     help="Dump the full memory")
+    group.add_option("--printmap", dest="printmap", action="store_true",
+                     help="Print memory map from maps file")
     parser.add_option_group(group)
 
     (options, args) = parser.parse_args()
@@ -71,8 +86,8 @@ def options_parse():
         parser.error("Must specify device file with -d/--device")
     if options.write:
        parser.error("This is currently not implemented. Exiting.")
-    if not options.deviceinfo and not options.zones and not options.memdump:
-        parser.error("Did not specify any read options")
+#    if not options.deviceinfo and not options.zones and not options.memdump:
+#        parser.error("Did not specify any read options")
 
     (options, args) = parser.parse_args()
     return options

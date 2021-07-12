@@ -1,4 +1,6 @@
+import binascii
 import serial
+import json
 import os
 import sys
 import re
@@ -96,44 +98,30 @@ class xtscontroller(object):
     def get_deviceinfo(self):
         ''' Get The device serial and model number '''
         ### These Values are hard-coded, necessary to determine which map file to use 
-        radioinfo = self.get_data(b'\x00\x00\x00')
+        radioinfo = self.getmemory(b'\x00\x00\x00')
         self.serial = radioinfo[7:17].decode()
         self.model = radioinfo[17:29].decode()
 
     def get_softspot(self):
         ''' Get the Radio Spotspot '''
-        self.softspot = self._checkread('radio_softspot') - 95
+        self.softspot = self.getvar('radio_softspot') - 95
 
     def get_softspot_high_1(self):
         ''' Get the High Tx softspots '''
-        self.softspot_high_1 = self._checkread('radio_softspot_high_135.025')
-        self.softspot_high_3 = self._checkread('radio_softspot_high_154.255')
+        self.softspot_high_1 = self.getvar('radio_softspot_high_135.025')
+        self.softspot_high_3 = self.getvar('radio_softspot_high_154.255')
 
     def get_zones(self):
-        self.zone_1_name = self._checkread('zone_1_name')
-
-    def _checkread(self, variable):
-        ''' Private function to read from the from already saved memory or read device '''
-        offset, start, end = self.memmap[variable]
-        if not offset in self.memdata:
-            radioinfo = self.get_data(offset)
-        else:
-            radioinfo = self.memmap[variable]
-
-        if start == end:
-            return radioinfo[start]
-        else:
-            return radioinfo[start:end]
-
+        self.zone_1_name = self.getvar('zone_1_name')
 
     def memdump(self):
         ''' Dump full device memory, debugging feature '''
         for x in range(0,1048576,32):
             mem_loc = x.to_bytes(3, byteorder='big')
-            data = self.get_data(mem_loc)
+            data = self.getmemory(mem_loc)
             print("%s: %s" % (binascii.b2a_hex(mem_loc).decode(), data))
 
-    def get_data(self, location):
+    def getmemory(self, location):
         ''' Generic function to get device data '''
         self.device.flush()
         combined = sbep.READ_DATA_REQ + b'\x20' + location
@@ -161,22 +149,35 @@ class xtscontroller(object):
 
         return radioinfo
 
+    def getvar(self, varname):
+        if varname in self.memdata:
+            return self.memdata[varname]
+
+        if not varname in self.memmap['map']:
+            print("Variable %s does not exist in memory map, exiting." % varname)
+            print(self.memmap['map'])
+            sys.exit()
+
+        offset = self.memmap['map'][varname]['offset']
+        start = self.memmap['map'][varname]['start']
+        end = self.memmap['map'][varname]['end']
+
+        memory = self.getmemory(bytes.fromhex(offset))
+        self.memdata[varname] = memory[start:end] # Assign it for future reference
+
+        return memory[start:end]
+
     def loadmemmap(self):
         ''' Load the appropriate memory map file located in $PWD/maps '''
 
         _start = 0
 
         try:
-            fp = open('maps/%s.img' % self.model)
+            fp = open('maps/%s.json' % self.model)
+            self.memmap = json.load(fp)
+            fp.close()
         except IOError:
-            print("Unable to open maps/%s.img!", file=sys.stderr)
+            print("Unable to open maps/%s.json!", file=sys.stderr)
             print("Your XTS3000 model might not be available yet.", file=sys.stderr)
             print("Contact Farhan Khan (KM4WRZ) at khanzf@gmail.com for support.", file=sys.stderr)
             sys.exit(0)
-
-        for line in fp:
-            if _start == 0:
-               _start = 1
-               continue
-            offset, start, end, name = line.strip().split('\t')
-            self.memmap.update({name: [bytes.fromhex(offset), int(start), int(end)]})

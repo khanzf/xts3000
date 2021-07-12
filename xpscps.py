@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+
 import os
 import sys
 from binascii import b2a_hex
 
 import xtscontroller
+import sbep
 
 def print_results(options, xts):
     ''' Print Results table '''
@@ -33,10 +35,11 @@ def main():
     xts.initialize(options.devfile)
 
     b = xts.device.read(size=1)
-    if b != xtscontroller.ACK:
+    if b != sbep.ACK:
         print("Error 3: ACK not received")
         sys.exit()
 
+    print("Get Device info")
     xts.get_deviceinfo()
 
     if options.softspot:

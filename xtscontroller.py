@@ -2,11 +2,7 @@ import serial
 import os
 import sys
 import re
-
-TSTMOD = b'\x01\x02\x01\x40' # CRC is \xF7
-EPREQ = b'\x00\x12\x01\x06' # CRC is \x02
-READ_DATA_REQ = b'\xF5\x11'
-ACK = b'\x50'
+import sbep
 
 class xtscontroller(object):
     ''' XTS3000 Controller Class '''
@@ -69,7 +65,7 @@ class xtscontroller(object):
 
     def cmd_tstmod(self):
         ''' Send the TSTMOD packet '''
-        tstmod = TSTMOD + _sbCRC(TSTMOD)
+        tstmod = sbep.TSTMOD + sbep.sbCRC(sbep.TSTMOD)
 
         self.rtsdtr_on()
         self.device.flush()
@@ -86,7 +82,7 @@ class xtscontroller(object):
 
     def cmd_epreq(self):
         ''' Send the EPREQ packet '''
-        epreq = EPREQ + _sbCRC(EPREQ)
+        epreq = sbep.EPREQ + sbep.sbCRC(sbep.EPREQ)
 
         self.rtsdtr_on()
         self.device.flush()
@@ -140,9 +136,9 @@ class xtscontroller(object):
     def get_data(self, location):
         ''' Generic function to get device data '''
         self.device.flush()
-        combined = READ_DATA_REQ + b'\x20' + location
-        crc_code = _checksum(READ_DATA_REQ + b'\x20' + location)
-        msg_crc = READ_DATA_REQ + b'\x20' + location + crc_code
+        combined = sbep.READ_DATA_REQ + b'\x20' + location
+        crc_code = sbep.checksum(sbep.READ_DATA_REQ + b'\x20' + location)
+        msg_crc = sbep.READ_DATA_REQ + b'\x20' + location + crc_code
 
         self.device.write(msg_crc)
         b = self.device.read(size=7)
@@ -151,7 +147,7 @@ class xtscontroller(object):
             sys.exit()
 
         b = self.device.read(size=1)
-        if b != ACK:
+        if b != sbep.ACK:
             print("Error 5a: ACK not received")
             sys.exit()
 
@@ -184,39 +180,3 @@ class xtscontroller(object):
                continue
             offset, start, end, name = line.strip().split('\t')
             self.memmap.update({name: [bytes.fromhex(offset), int(start), int(end)]})
-
-def _right_shift_as_signed(byte, bits):
-    ''' Pythonic way to do a right bit shift with a signed variable '''
-    result  = byte >> bits
-    result |= byte & 0x80
-    return result
-
-def _sbCRC(msg):
-    ''' Compute SBEP CRC data '''
-    n = 0
-    table = b'\x00\x99\xac\x35\xc7\x5e\x6b\xf2'
-
-    length = len(msg)
-
-    for i, byte in enumerate(msg):
-        n = byte ^ n
-        a = _right_shift_as_signed(n, 1)
-        a = (a >> 1)
-        a = a ^ n
-        b = a
-        a = (a << 1) & 0xF0
-        b = _right_shift_as_signed(b, 1)
-        if b & 0x80:
-            b = ~b & 0xFF
-        n = (a + (b & 0x0F)) ^ table[n & 0x07]
-
-    return bytes(bytearray([n]))
-
-def _checksum(msg):
-    ''' Calculate the checksum '''
-    total = 0
-    for byte in msg:
-#        print(byte)
-        total = total + byte
-
-    return bytes(bytearray([255 - (total % 256)]))

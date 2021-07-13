@@ -10,22 +10,8 @@ import sbep
 
 def print_results(options, xts):
     ''' Print Results table '''
-    if options.deviceinfo:
-        print("Serial Number:\t\t\t", xts.serial)
-        print("Model Number:\t\t\t", xts.model)
-
-    if options.softspot:
-        print("Radio Softspot:\t\t\t", xts.softspot, "This is incorrect")
-        print("Tx High Protocol")
-        print("Radio Softspot 136.025 MHz:\t", xts.softspot_high_1)
-        print("Radio Softspot 142.123 MHz:\t", "[memory address undetermined]")
-        print("Radio Softspot 154.225 MHz:\t", xts.softspot_high_3)
-
-    if options.printmap:
-        print("Offset\tStart\tEnd\tVariable")
-        for variable in xts.memmap:
-            offset, start, end = xts.memmap[variable] 
-            print("%s\t%s\t%s\t%s" % (b2a_hex(offset).decode(), start, end, variable))
+    for v in xts.radiovalues:
+        print("%s:\t\t%s" % (v, xts.radiovalues[v]))
 
 def main():
     ''' Main Function '''
@@ -41,19 +27,19 @@ def main():
 
     print("Get Device info")
     xts.get_deviceinfo()
-    xts.loadmemmap()
+    xts.loadmap()
+    xts.get_all_settings()
 
     if options.printmap:
         pass
     if options.memdump:
         xts.memdump()
         
-
     print_results(options, xts)
 
 def options_parse():
     ''' Parse the cmdline options '''
-    usage = "usage: %prog [-d] | [-w]"
+    usage = "usage: %prog [-d] | [-i] [[--memdump]"
     version = "Currently not versioned"
 
     from optparse import OptionParser

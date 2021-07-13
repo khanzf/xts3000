@@ -1,0 +1,29 @@
+{
+	"device_info": {
+		"name" :"Motorola XTS3000 Model 3 VHF P25",
+		"range": "VHF 136-174MHz",
+		"power": "5watt"
+	},
+	"map": {
+		"serial": {
+			"offset": "000000",
+			"type": "string",
+			"start": 4,
+			"end": 14 
+		},
+		"model": {
+			"offset": "000000",
+			"type": "string",
+			"start": 14,
+			"end": 26
+		},
+		"block_pending_ca_pc": {
+			"offset": "0002a0",
+			"type": "bit",
+			"cpspath": "Radio Configuration -> Radio Wide -> General",
+			"start": 5,
+			"end": 6,
+			"bitand": "01"
+		}
+	}
+}

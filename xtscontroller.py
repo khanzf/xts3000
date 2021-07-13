@@ -10,20 +10,9 @@ class xtscontroller(object):
     ''' XTS3000 Controller Class '''
     # Radio Information
     model = ''
-    serial = ''
-    codeplug = ''
 
-    # Reference Oscillator
-    softspot = 0
-
-    # Transmission Alignment
-    ## Tx Power High
-    softspot_high_1 = 0
-    softspot_high_2 = 0
-    softspot_high_3 = 0
-
-    memmap = {} # from the maps file 
-    memdata = {} # Stores previously read memory
+    radiovalues = {} # from the maps file
+    memmap = {} # Stores previously read memory
 
     def openradio(self, devfile):
         ''' Open the Radio '''
@@ -96,23 +85,10 @@ class xtscontroller(object):
         self.rtsdtr_off()
 
     def get_deviceinfo(self):
-        ''' Get The device serial and model number '''
-        ### These Values are hard-coded, necessary to determine which map file to use 
-        radioinfo = self.getmemory(b'\x00\x00\x00')
-        self.serial = radioinfo[7:17].decode()
-        self.model = radioinfo[17:29].decode()
-
-    def get_softspot(self):
-        ''' Get the Radio Spotspot '''
-        self.softspot = self.getvar('radio_softspot') - 95
-
-    def get_softspot_high_1(self):
-        ''' Get the High Tx softspots '''
-        self.softspot_high_1 = self.getvar('radio_softspot_high_135.025')
-        self.softspot_high_3 = self.getvar('radio_softspot_high_154.255')
-
-    def get_zones(self):
-        self.zone_1_name = self.getvar('zone_1_name')
+        ''' Get the device model number '''
+        ### This value is hard-coded, necessary to determine which map file to use 
+        memory = self.getmemory(b'\x00\x00\x00')[3:]
+        self.radiovalues['model'] = memory[14:26].decode()
 
     def memdump(self):
         ''' Dump full device memory, debugging feature '''
@@ -123,6 +99,10 @@ class xtscontroller(object):
 
     def getmemory(self, location):
         ''' Generic function to get device data '''
+
+        if location in self.memmap:
+            return self.memmap[location]
+
         self.device.flush()
         combined = sbep.READ_DATA_REQ + b'\x20' + location
         crc_code = sbep.checksum(sbep.READ_DATA_REQ + b'\x20' + location)
@@ -147,34 +127,41 @@ class xtscontroller(object):
         readsize = b[1]
         radioinfo = self.device.read(size=readsize)
 
+        self.memmap[location] = radioinfo[3:]
+
         return radioinfo
 
     def getvar(self, varname):
-        if varname in self.memdata:
-            return self.memdata[varname]
-
-        if not varname in self.memmap['map']:
-            print("Variable %s does not exist in memory map, exiting." % varname)
-            print(self.memmap['map'])
-            sys.exit()
-
-        offset = self.memmap['map'][varname]['offset']
-        start = self.memmap['map'][varname]['start']
-        end = self.memmap['map'][varname]['end']
+        offset = self.radiovalues[varname]['offset']
+        start = self.radiovalues[varname]['start']
+        end = self.radiovalues[varname]['end']
 
         memory = self.getmemory(bytes.fromhex(offset))
-        self.memdata[varname] = memory[start:end] # Assign it for future reference
 
-        return memory[start:end]
+        if self.radiovalues[varname]['type'] == 'string':
+            return memory[start:end].decode()
+        elif self.radiovalues[varname]['type'] == 'bit':
+            if ord(memory[start:end]) & ord(bytes.fromhex(self.radiovalues[varname]['bitand'])) == 0:
+                return False
+            else:
+                return True
+        else:
+            print("Unset type, exiting.")
+            print(self.radiovalues[varname]['type'])
+            sys.exit()
 
-    def loadmemmap(self):
+    def get_all_settings(self):
+        for v in self.radiovalues:
+            self.radiovalues[v] = self.getvar(v)
+
+    def loadmap(self):
         ''' Load the appropriate memory map file located in $PWD/maps '''
 
         _start = 0
 
         try:
-            fp = open('maps/%s.json' % self.model)
-            self.memmap = json.load(fp)
+            fp = open('maps/%s.json' % self.radiovalues['model'])
+            self.radiovalues = json.load(fp)['map']
             fp.close()
         except IOError:
             print("Unable to open maps/%s.json!", file=sys.stderr)
